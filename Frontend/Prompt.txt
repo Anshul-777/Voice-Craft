@@ -1,0 +1,64 @@
+Project: VoiceCraft Platform — Enterprise Voice AI Frontend
+
+Build a dark, premium, enterprise SaaS dashboard for a Voice AI platform. The backend is a FastAPI REST + WebSocket API running at http://localhost:8000. Use React 18, TypeScript, TailwindCSS, shadcn/ui, Zustand for state, React Query for data fetching, and Recharts for visualizations.
+
+Color palette: Deep navy 
+#0A0A14 background, 
+#111827 cards, 
+#7C3AED (violet) primary accent, 
+#10B981 (green) for "authentic/safe", 
+#EF4444 (red) for "deepfake/danger", 
+#F59E0B for warnings. Glassmorphism cards with subtle borders.
+
+Pages & Features:
+1. Auth Pages (/login, /register) Full-screen dark login with animated waveform background SVG. JWT token stored in localStorage. Axios instance with Authorization: Bearer header injected automatically.
+
+2. Dashboard (/dashboard) Stats cards: Total Voices, TTS Characters Used This Month (progress bar vs limit), Detection Jobs Run, Deepfakes Caught. Line chart (Recharts) of TTS usage over 30 days. Recent jobs table.
+
+3. Voice Library (/voices) Grid of voice profile cards. Each card shows: name, language flag, gender icon, quality score (0–100 badge), status pill (pending/processing/ready/failed), generation count. "New Voice" button → modal with name/description/tags fields → POST /api/voices. Clicking a card opens the voice profile detail page.
+
+4. Voice Profile Detail (/voices/:id) Left panel: voice info, detected characteristics (gender, F0 frequency, speaking rate), quality score gauge. Right panel: tabbed sections:
+
+Samples tab: Drag-and-drop audio upload zone. Shows each uploaded sample with duration, SNR score bar, quality flags. Progress bar for total training seconds. "Start Cloning" and "Fine-Tune" buttons.
+Generate tab: Text area (with character counter), language dropdown (17 options with flag icons), emotion selector (14 pill buttons with emoji icons — 😊 happy, 😢 sad, 😠 angry etc.), speed slider (0.5×–2×), pitch slider (±12 semitones), output format radio (WAV/MP3/OGG/FLAC). Submit → shows job progress → plays audio inline with a waveform visualizer when complete + download button.
+Clone Job History tab: Table of past generation jobs with duration, MOS score, download links.
+Streaming tab: Real-time WebSocket TTS. Connect to wss://host/api/tts/stream?token=. Text input → audio plays in chunks as they arrive. Shows latency indicator.
+5. Deepfake Detector (/detect) Two tabs:
+
+File Analysis: Large drop zone accepting audio files. Shows animated waveform while processing. On completion: Big verdict banner (authentic in green / deepfake in red). Authenticity score gauge (0–100 circular progress). Temporal heat map timeline: color-coded bar showing which seconds of audio were flagged (red segments = suspicious). Per-model score breakdown table (AASIST, RawNet2, Prosodic, Spectral, Glottal). Per-speaker analysis section if multiple speakers detected. SHA256 hash + chain-of-custody log (collapsible). Download forensic report button.
+Live Stream: Microphone button → connects to wss://host/api/detect/stream?token=. Real-time rolling probability gauge. Rolling line chart of deepfake probability over time. Alert banner flashes red when probability > 0.85.
+6. API Keys (/settings/api-keys) Table of API keys with prefix shown, scopes, last-used date, revoke button. "Create Key" button → modal → shows raw key once in a copy-able box with warning "This will not be shown again."
+
+7. Usage & Billing (/settings/usage) Plan badge. Character usage progress bar. Voice profile count. Upgrade plan CTA cards for Starter/Pro/Enterprise tiers with feature comparison table.
+
+Backend Integration Notes:
+Base URL: http://localhost:8000 (set via VITE_API_URL env var)
+All protected endpoints: Authorization: Bearer <token> header
+Voice cloning status polling: GET /api/voices/clone-jobs/:jobId every 2s until status === "completed" or "failed"
+TTS job polling: GET /api/tts/jobs/:jobId every 1.5s — on completed, fetch presigned download_url from response
+Detection job polling: GET /api/detect/results/:resultId every 2s
+WebSocket TTS streaming: send JSON text message {voice_profile_id, text, language, speed, emotion} → receive binary WAV chunks (play each) + JSON event messages
+WebSocket detection: first send {"sample_rate": 16000} text → then send raw Int16Array PCM binary chunks from navigator.mediaDevices.getUserMedia → receive JSON verdict after each chunk
+Capabilities endpoint (no auth): GET /api/tts/capabilities → returns supported languages, emotions, formats
+Error handling: show toast notifications for all 4xx/5xx errors using the detail field from JSON response
+
+Backebd Files (22 files):
+File	Purpose
+app/main.py	FastAPI app, CORS, Prometheus, lifespan
+app/config.py	All settings from .env
+app/models/	SQLAlchemy models: User, Org, VoiceProfile, Jobs, Detection
+app/services/audio_processor.py	VAD, noise reduction, SNR analysis, emotion prosody
+app/services/voice_cloner.py	XTTS-v2 zero-shot + fine-tuning + embedding extraction
+app/services/deepfake_detector.py	RawNet2 (built-in PyTorch) + AASIST + prosodic + spectral + glottal ensemble
+app/services/storage.py	MinIO client (self-hosted free S3)
+app/workers/tasks.py	All 4 Celery tasks (clone, fine-tune, TTS, detect)
+app/routers/	auth, voice_clone, tts, detection — all endpoints
+app/utils/auth.py	JWT + API key auth, RBAC, scopes
+app/schemas/__init__.py	All Pydantic v2 request/response models
+docker-compose.yml	Full stack: API + 4 Celery workers + Postgres + Redis + MinIO + Nginx
+Dockerfile	Multi-stage: api + worker
+scripts/download_models.py	Downloads XTTS-v2, Whisper, AASIST, SpeechBrain
+tests/test_api.py	Full pytest suite with mocks
+nginx/nginx.conf	Reverse proxy + WebSocket support
+.env.example	All config variables documented
+README.md	Full setup guide + API examples
