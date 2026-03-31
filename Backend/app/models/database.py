@@ -64,6 +64,6 @@ async def get_db() -> AsyncSession:
 
 async def create_tables() -> None:
     """Create all tables on startup."""
-    from app.models import user, voice_profile, generation_job, detection_result  # noqa: F401
+    from app.models import user, voice_profile, generation_job  # noqa: F401
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

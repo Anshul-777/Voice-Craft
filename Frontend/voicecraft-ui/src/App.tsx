@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuthStore } from './store';
+import { useAuthStore, useThemeStore } from './store';
 import { Sidebar } from './components/Sidebar';
 import { ToastContainer } from './components/UI';
 
@@ -15,6 +15,7 @@ import Studio from './pages/Studio';
 import DeepfakeDetector from './pages/Detector';
 import ApiKeys from './pages/ApiKeys';
 import Usage from './pages/Usage';
+import History from './pages/History';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30000 } } });
 
@@ -32,6 +33,16 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { isDark } = useThemeStore();
+
+  React.useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
   return (
     <QueryClientProvider client={qc}>
       <BrowserRouter>
@@ -44,6 +55,7 @@ export default function App() {
           <Route path="/studio" element={<ProtectedLayout><Studio /></ProtectedLayout>} />
           <Route path="/voices" element={<ProtectedLayout><VoiceLibrary /></ProtectedLayout>} />
           <Route path="/voices/:id" element={<ProtectedLayout><VoiceDetail /></ProtectedLayout>} />
+          <Route path="/history" element={<ProtectedLayout><History /></ProtectedLayout>} />
           <Route path="/detect" element={<ProtectedLayout><DeepfakeDetector /></ProtectedLayout>} />
           <Route path="/settings/api-keys" element={<ProtectedLayout><ApiKeys /></ProtectedLayout>} />
           <Route path="/settings/usage" element={<ProtectedLayout><Usage /></ProtectedLayout>} />

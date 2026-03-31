@@ -184,20 +184,26 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # ─────────────────────────────────────────────────────────────────
-#  Routers
+#  Routers — each in try/except so one failure doesn't crash all
 # ─────────────────────────────────────────────────────────────────
 
-from app.routers.auth import router as auth_router
-from app.routers.voice_clone import router as voice_router
-from app.routers.tts import router as tts_router
-from app.routers.s2s import router as s2s_router
-from app.routers.detection import router as detection_router
+_routers = [
+    ("app.routers.auth", "Auth"),
+    ("app.routers.voice_clone", "Voice Clone"),
+    ("app.routers.tts", "TTS"),
+    ("app.routers.s2s", "Speech-to-Speech"),
+    ("app.routers.detection", "Deepfake Detection"),
+    ("app.routers.stats", "Stats"),
+]
 
-app.include_router(auth_router)
-app.include_router(voice_router)
-app.include_router(tts_router)
-app.include_router(s2s_router)
-app.include_router(detection_router)
+for _module_path, _label in _routers:
+    try:
+        import importlib
+        _mod = importlib.import_module(_module_path)
+        app.include_router(_mod.router)
+        logger.info("Router loaded: %s", _label)
+    except Exception as _e:
+        logger.error("Failed to load router %s: %s", _label, _e)
 
 
 # ─────────────────────────────────────────────────────────────────

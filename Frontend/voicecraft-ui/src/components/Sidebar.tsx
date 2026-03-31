@@ -1,19 +1,24 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Mic2, LayoutDashboard, Library, Shield, Key, BarChart3, LogOut, Settings, PlayCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Mic2, LayoutDashboard, Library, Shield, Key, BarChart3, LogOut, Settings, PlayCircle, PanelLeftClose, PanelLeftOpen, History } from 'lucide-react';
 import { useAuthStore } from '../store';
 
 const nav = [
-  { label: 'Core', items: [
-    { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
-    { icon: PlayCircle, label: 'Studio (Generate)', to: '/studio' },
-    { icon: Library, label: 'Voice Library', to: '/voices' },
-    { icon: Shield, label: 'Deepfake Detector', to: '/detect' },
-  ]},
-  { label: 'Settings', items: [
-    { icon: Key, label: 'API Keys', to: '/settings/api-keys' },
-    { icon: BarChart3, label: 'Usage & Billing', to: '/settings/usage' },
-  ]},
+  {
+    label: 'Core', items: [
+      { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
+      { icon: PlayCircle, label: 'Studio (Generate)', to: '/studio' },
+      { icon: Library, label: 'Voice Profiles', to: '/voices' },
+      { icon: History, label: 'History Logs', to: '/history' },
+      { icon: Shield, label: 'Deepfake Detector', to: '/detect' },
+    ]
+  },
+  {
+    label: 'Settings', items: [
+      { icon: Key, label: 'API Keys', to: '/settings/api-keys' },
+      { icon: BarChart3, label: 'Usage & Billing', to: '/settings/usage' },
+    ]
+  },
 ];
 
 export function Sidebar({ isCollapsed, toggle }: { isCollapsed?: boolean; toggle?: () => void }) {
@@ -49,7 +54,7 @@ export function Sidebar({ isCollapsed, toggle }: { isCollapsed?: boolean; toggle
               className={({ isActive }) => `nav-item${isActive ? ' active' : ''} ${isCollapsed ? 'justify-center p-12' : ''}`}
               title={isCollapsed ? item.label : undefined}
             >
-              <item.icon size={18} className={isCollapsed ? 'm-auto' : ''}/>
+              <item.icon size={18} className={isCollapsed ? 'm-auto' : ''} />
               {!isCollapsed && item.label}
             </NavLink>
           ))}
@@ -58,7 +63,7 @@ export function Sidebar({ isCollapsed, toggle }: { isCollapsed?: boolean; toggle
 
       <div className="sidebar-spacer" />
       <button className={`nav-item text-red ${isCollapsed ? 'justify-center p-12' : ''}`} onClick={handleLogout} title={isCollapsed ? "Sign Out" : undefined}>
-        <LogOut size={18} className={isCollapsed ? 'm-auto' : ''}/>
+        <LogOut size={18} className={isCollapsed ? 'm-auto' : ''} />
         {!isCollapsed && "Sign Out"}
       </button>
       {user && (

@@ -17,9 +17,15 @@ from typing import Any
 import librosa
 import numpy as np
 import soundfile as sf
-import webrtcvad
 from pydub import AudioSegment
 from scipy import signal as scipy_signal
+
+# webrtcvad is optional — fallback to energy-based VAD if unavailable
+try:
+    import webrtcvad
+    HAS_WEBRTCVAD = True
+except ImportError:
+    HAS_WEBRTCVAD = False
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +68,11 @@ class AudioProcessor:
     SILENCE_THRESHOLD_DB = -45.0
 
     def __init__(self) -> None:
-        self._vad = webrtcvad.Vad(self.VAD_AGGRESSIVENESS)
+        if HAS_WEBRTCVAD:
+            self._vad = webrtcvad.Vad(self.VAD_AGGRESSIVENESS)
+        else:
+            self._vad = None
+            logger.warning("webrtcvad not available — using energy-based VAD fallback")
 
     # ─────────────────────────────────────────────────────────────
     #  Public API
@@ -196,6 +206,10 @@ class AudioProcessor:
         Split long audio into speech-only segments using VAD.
         Useful for chunking training data.
         """
+        if not HAS_WEBRTCVAD or self._vad is None:
+            # Fallback: energy-based segmentation
+            return self._energy_based_segmentation(audio, sr, max_segment_seconds, min_segment_seconds)
+
         frame_samples = int(sr * self.VAD_FRAME_MS / 1000)
         frame_bytes_sr = 16000  # WebRTC VAD always uses 16kHz internally
         # Resample to 16kHz for VAD
@@ -236,7 +250,6 @@ class AudioProcessor:
             dur = len(seg) / sr
             if dur >= min_segment_seconds:
                 if dur > max_segment_seconds:
-                    # Split at sentence boundaries (every max_segment_seconds)
                     seg_samples = int(max_segment_seconds * sr)
                     for start in range(0, len(seg), seg_samples):
                         chunk = seg[start : start + seg_samples]
@@ -246,6 +259,40 @@ class AudioProcessor:
                     segments.append(seg)
 
         return segments
+
+    def _energy_based_segmentation(
+        self, audio: np.ndarray, sr: int,
+        max_segment_seconds: float, min_segment_seconds: float
+    ) -> list[np.ndarray]:
+        """Fallback VAD using energy thresholding when webrtcvad is unavailable."""
+        frame_length = int(sr * 0.03)  # 30ms frames
+        rms = librosa.feature.rms(y=audio, frame_length=frame_length, hop_length=frame_length)[0]
+        threshold = np.max(rms) * 0.05
+        is_speech = rms > threshold
+
+        segments: list[np.ndarray] = []
+        in_speech = False
+        seg_start = 0
+
+        for i, voiced in enumerate(is_speech):
+            sample_pos = i * frame_length
+            if voiced and not in_speech:
+                in_speech = True
+                seg_start = sample_pos
+            elif not voiced and in_speech:
+                in_speech = False
+                seg = audio[seg_start:sample_pos]
+                dur = len(seg) / sr
+                if min_segment_seconds <= dur <= max_segment_seconds:
+                    segments.append(seg)
+
+        if in_speech:
+            seg = audio[seg_start:]
+            dur = len(seg) / sr
+            if dur >= min_segment_seconds:
+                segments.append(seg[:int(max_segment_seconds * sr)])
+
+        return segments if segments else [audio]
 
     def save_audio(
         self,
@@ -265,17 +312,24 @@ class AudioProcessor:
             # Write wav first, convert with ffmpeg
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
                 sf.write(tmp.name, audio, sr, subtype="PCM_16")
-                subprocess.run(
-                    [
-                        "ffmpeg", "-y", "-i", tmp.name,
-                        "-codec:a", "libmp3lame" if fmt == "mp3" else "libvorbis",
-                        "-b:a", bit_rate,
-                        str(output_path),
-                    ],
-                    capture_output=True,
-                    check=True,
-                )
-                Path(tmp.name).unlink(missing_ok=True)
+                try:
+                    subprocess.run(
+                        [
+                            "ffmpeg", "-y", "-i", tmp.name,
+                            "-codec:a", "libmp3lame" if fmt == "mp3" else "libvorbis",
+                            "-b:a", bit_rate,
+                            str(output_path),
+                        ],
+                        capture_output=True,
+                        check=True,
+                    )
+                except FileNotFoundError:
+                    # ffmpeg not found — save as wav instead
+                    logger.warning("ffmpeg not found — saving as WAV instead of %s", fmt)
+                    sf.write(str(output_path.with_suffix('.wav')), audio, sr, subtype="PCM_16")
+                    return output_path.with_suffix('.wav')
+                finally:
+                    Path(tmp.name).unlink(missing_ok=True)
         else:
             sf.write(str(output_path), audio, sr)
 
@@ -352,10 +406,9 @@ class AudioProcessor:
         Estimate SNR by comparing speech segments to non-speech segments.
         Falls back to Parabolic SNR if VAD finds no silence.
         """
-        # Use top_db trim to find signal vs noise
         _, intervals = librosa.effects.trim(audio, top_db=20, frame_length=512, hop_length=256)
         if intervals[0] == 0 and intervals[1] == len(audio):
-            return 30.0  # All speech, assume good SNR
+            return 30.0
 
         signal_part = audio[intervals[0]:intervals[1]]
         noise_parts = np.concatenate([audio[:intervals[0]], audio[intervals[1]:]])
@@ -370,6 +423,9 @@ class AudioProcessor:
 
     def _vad_analysis(self, audio: np.ndarray, sr: int) -> tuple[int, float]:
         """Returns (speech_frame_count, speech_ratio)."""
+        if not HAS_WEBRTCVAD or self._vad is None:
+            return self._energy_vad_analysis(audio, sr)
+
         audio_16k = librosa.resample(audio, orig_sr=sr, target_sr=16000)
         frame_16k = int(16000 * self.VAD_FRAME_MS / 1000)
         total_frames = 0
@@ -382,6 +438,16 @@ class AudioProcessor:
                     speech_frames += 1
             except Exception:
                 speech_frames += 1
+        ratio = speech_frames / total_frames if total_frames > 0 else 0.0
+        return speech_frames, ratio
+
+    def _energy_vad_analysis(self, audio: np.ndarray, sr: int) -> tuple[int, float]:
+        """Energy-based VAD fallback when webrtcvad is unavailable."""
+        frame_length = int(sr * 0.03)
+        rms = librosa.feature.rms(y=audio, frame_length=frame_length, hop_length=frame_length)[0]
+        threshold = np.max(rms) * 0.05
+        speech_frames = int(np.sum(rms > threshold))
+        total_frames = len(rms)
         ratio = speech_frames / total_frames if total_frames > 0 else 0.0
         return speech_frames, ratio
 

@@ -1,0 +1,80 @@
+version: "3.9"
+
+services:
+  celery-clone:
+    image: voicecraft-worker:latest
+    container_name: voicecraft_celery_clone
+    restart: unless-stopped
+    command: >
+      celery -A app.workers.celery_app worker
+      --queues=clone,fine_tune
+      --concurrency=1
+      --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://voicecraft:voicecraft_pass@host.docker.internal:5433/voicecraft
+      REDIS_URL: redis://host.docker.internal:6379/0
+      CELERY_BROKER_URL: redis://host.docker.internal:6379/1
+      CELERY_RESULT_BACKEND: redis://host.docker.internal:6379/2
+      MINIO_ENDPOINT: host.docker.internal:9000
+      MINIO_ACCESS_KEY: voicecraft_admin
+      MINIO_SECRET_KEY: voicecraft_secret_CHANGE_ME
+      MINIO_SECURE: "false"
+      MODELS_DIR: /app/models_cache
+      VOICE_PROFILES_DIR: /app/voice_profiles
+      XTTS_DEVICE: "cpu"
+      WHISPER_DEVICE: "cpu"
+    volumes:
+      - ./models_cache:/app/models_cache
+      - ./voice_profiles:/app/voice_profiles
+
+  celery-tts:
+    image: voicecraft-worker:latest
+    container_name: voicecraft_celery_tts
+    restart: unless-stopped
+    command: >
+      celery -A app.workers.celery_app worker
+      --queues=tts
+      --concurrency=2
+      --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://voicecraft:voicecraft_pass@host.docker.internal:5433/voicecraft
+      REDIS_URL: redis://host.docker.internal:6379/0
+      CELERY_BROKER_URL: redis://host.docker.internal:6379/1
+      CELERY_RESULT_BACKEND: redis://host.docker.internal:6379/2
+      MINIO_ENDPOINT: host.docker.internal:9000
+      MINIO_ACCESS_KEY: voicecraft_admin
+      MINIO_SECRET_KEY: voicecraft_secret_CHANGE_ME
+      MINIO_SECURE: "false"
+      MODELS_DIR: /app/models_cache
+      VOICE_PROFILES_DIR: /app/voice_profiles
+      XTTS_DEVICE: "cpu"
+      WHISPER_DEVICE: "cpu"
+    volumes:
+      - ./models_cache:/app/models_cache
+      - ./voice_profiles:/app/voice_profiles
+
+  celery-detect:
+    image: voicecraft-worker:latest
+    container_name: voicecraft_celery_detect
+    restart: unless-stopped
+    command: >
+      celery -A app.workers.celery_app worker
+      --queues=detect
+      --concurrency=2
+      --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://voicecraft:voicecraft_pass@host.docker.internal:5433/voicecraft
+      REDIS_URL: redis://host.docker.internal:6379/0
+      CELERY_BROKER_URL: redis://host.docker.internal:6379/1
+      CELERY_RESULT_BACKEND: redis://host.docker.internal:6379/2
+      MINIO_ENDPOINT: host.docker.internal:9000
+      MINIO_ACCESS_KEY: voicecraft_admin
+      MINIO_SECRET_KEY: voicecraft_secret_CHANGE_ME
+      MINIO_SECURE: "false"
+      MODELS_DIR: /app/models_cache
+      VOICE_PROFILES_DIR: /app/voice_profiles
+      XTTS_DEVICE: "cpu"
+      WHISPER_DEVICE: "cpu"
+    volumes:
+      - ./models_cache:/app/models_cache
+      - ./voice_profiles:/app/voice_profiles

@@ -39,7 +39,7 @@ async def register(body: UserRegisterRequest, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=409, detail="Username taken")
 
     # Create organization
-    from python_slugify import slugify
+    from slugify import slugify
     org_name = body.organization_name or f"{body.username}'s Workspace"
     org_slug = slugify(org_name)
 

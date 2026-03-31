@@ -1,0 +1,91 @@
+# ═══════════════════════════════════════════════════════════════
+# VoiceCraft Platform — requirements-native.txt
+# Lightweight install for native Windows development
+# Installs in phases to avoid dependency resolution conflicts
+# ═══════════════════════════════════════════════════════════════
+
+# ── Phase 1: Core Web Framework ────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+websockets==13.1
+httpx==0.28.0
+
+# ── Async / Task Queue ─────────────────────────────────────────
+celery==5.4.0
+redis==5.2.0
+kombu==5.4.2
+
+# ── Database ───────────────────────────────────────────────────
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+
+# ── Validation / Settings ─────────────────────────────────────
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+
+# ── Auth / Security ────────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography>=43.0.0
+
+# ── Object Storage ─────────────────────────────────────────────
+minio==7.2.11
+
+# ── Core Audio Processing ─────────────────────────────────────
+numpy>=1.24.0,<2.0.0
+scipy>=1.11.0
+librosa==0.10.2
+soundfile==0.12.1
+pydub==0.25.1
+audioread==3.0.1
+resampy==0.4.3
+noisereduce==3.0.3
+
+# ── Voice Cloning & TTS ───────────────────────────────────────
+# NOTE: torch must be installed FIRST, separately
+# pip install torch==2.4.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cpu
+TTS==0.22.0
+torchaudio==2.4.1
+
+# ── Speaker Verification ──────────────────────────────────────
+speechbrain==1.0.2
+
+# ── Deepfake Detection ────────────────────────────────────────
+transformers==4.46.3
+huggingface-hub==0.26.2
+accelerate==1.1.1
+einops==0.8.0
+
+# ── Audio Features ─────────────────────────────────────────────
+python-speech-features==0.6
+praat-parselmouth==0.4.4
+
+# ── ML / Inference ─────────────────────────────────────────────
+scikit-learn==1.5.2
+joblib==1.4.2
+onnxruntime==1.20.1
+
+# ── Transcription ─────────────────────────────────────────────
+openai-whisper==20231117
+
+# ── Concurrency ───────────────────────────────────────────────
+anyio==4.7.0
+tenacity==9.0.0
+
+# ── Monitoring ─────────────────────────────────────────────────
+structlog==24.4.0
+
+# ── File Format ────────────────────────────────────────────────
+ffmpeg-python==0.2.0
+mutagen==1.47.0
+
+# ── Utilities ──────────────────────────────────────────────────
+python-slugify==8.0.4
+shortuuid==1.0.13
+aiofiles==24.1.0
+cachetools==5.5.0
+tqdm==4.67.1
+psutil==6.1.0

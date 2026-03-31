@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Download, Wifi, ArrowLeft, Zap, Sparkles } from 'lucide-react';
+import { Download, Wifi, ArrowLeft, Zap, Sparkles } from 'lucide-react';
 import api from '../lib/api';
 import { useToastStore } from '../store';
 import { Waveform, Spinner } from '../components/UI';
+import { AudioRecorder } from '../components/AudioRecorder';
 
 const LANGUAGES = ['en','es','fr','de','it','pt','zh','ja','ko','ar','hi','ru','tr','nl','pl','sv','cs'];
 const EMOTIONS = [
@@ -31,8 +32,6 @@ export default function VoiceDetail() {
     language: 'en', emotion: 'neutral', speed: 1.0, pitch: 0, format: 'mp3',
   });
   const [generating, setGenerating] = useState(false);
-  const [audioUrl, setAudioUrl] = useState('');
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     api.get(`/api/voices/${id}`)
@@ -48,6 +47,16 @@ export default function VoiceDetail() {
   const uploadSample = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    await submitAudio(file);
+  };
+
+  const handleRecordingComplete = async (audioBlob: Blob) => {
+    // Convert Blob to File
+    const file = new File([audioBlob], `recording-${Date.now()}.webm`, { type: 'audio/webm' });
+    await submitAudio(file);
+  };
+
+  const submitAudio = async (file: File) => {
     setUploading(true);
     try {
       const fd = new FormData();
@@ -56,7 +65,7 @@ export default function VoiceDetail() {
       setSamples((s) => [...s, r.data]);
       addToast('Sample uploaded successfully!', 'success');
     } catch (err: any) {
-      addToast(err.message || 'Sample upload failed', 'error');
+      addToast(err.response?.data?.detail || err.message || 'Sample upload failed', 'error');
     } finally {
       setUploading(false);
     }
@@ -77,7 +86,6 @@ export default function VoiceDetail() {
 
   const generateTTS = async () => {
     setGenerating(true);
-    setAudioUrl('');
     try {
       const r = await api.post('/api/tts/generate', { voice_profile_id: id, ...ttsForm });
       const jobId = r.data.job_id;
@@ -85,7 +93,6 @@ export default function VoiceDetail() {
         await new Promise((res) => setTimeout(res, 1500));
         const job = await api.get(`/api/tts/jobs/${jobId}`);
         if (job.data.status === 'completed') {
-          setAudioUrl(job.data.download_url);
           addToast('Audio generated successfully!', 'success');
           // Refresh history ideally
           api.get(`/api/voices/${id}/generations`).then((hr) => setHistory(hr.data || [])).catch(() => {});
@@ -134,14 +141,18 @@ export default function VoiceDetail() {
 
       {activeTab === 0 && (
         <div>
-          <div className="dropzone" onClick={() => fileRef.current?.click()}>
-            <div className="dropzone-icon">🎙️</div>
-            <p><strong>Drop audio files here</strong> or click to browse</p>
-            <p className="font-11 text-muted mt-8">MP3, WAV, OGG · Min 6 seconds recommended</p>
-            {uploading && <div className="mt-40"><Spinner /></div>}
-            <label htmlFor="sample-upload" className="sr-only">Upload Sample Audio</label>
-            <input id="sample-upload" ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={uploadSample} />
+          <div className="grid-2 gap-4 mb-4">
+            <AudioRecorder onRecordingComplete={handleRecordingComplete} maxDurationSeconds={120} />
+            <div className="dropzone h-full min-h-[200px]" onClick={() => fileRef.current?.click()}>
+              <div className="dropzone-icon">📁</div>
+              <p><strong>Drop audio files here</strong> or click to browse</p>
+              <p className="font-11 text-muted mt-8">MP3, WAV, OGG · Min 6 seconds recommended</p>
+              <label htmlFor="sample-upload" className="sr-only">Upload Sample Audio</label>
+              <input id="sample-upload" ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={uploadSample} />
+            </div>
           </div>
+          {uploading && <div className="text-center mb-4"><Spinner /> Uploading & Analyzing...</div>}
+          
           {samples.length > 0 ? (
             <div className="card mt-4">
               <div className="card-title">Uploaded Samples ({samples.length})</div>

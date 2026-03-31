@@ -42,8 +42,8 @@ minio==7.2.11
 # ── Core Audio Processing ─────────────────────────────────────
 librosa==0.10.2
 soundfile==0.12.1
-numpy==1.26.4
-scipy==1.14.1
+numpy>=1.23.0,<1.25.0
+scipy>=1.10.0,<1.13.0
 pydub==0.25.1
 audioread==3.0.1
 resampy==0.4.3
@@ -77,7 +77,7 @@ onnxruntime==1.20.1     # Fast CPU inference for detection models
 pandas<2.0.0,>=1.4.0
 
 # ── Transcription (Whisper — MIT License, FREE) ───────────────
-openai-whisper==20231117
+openai-whisper
 
 # ── Background Tasks / Concurrency ───────────────────────────
 anyio==4.7.0

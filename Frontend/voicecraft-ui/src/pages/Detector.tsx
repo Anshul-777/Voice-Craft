@@ -3,6 +3,7 @@ import { Shield, Upload, Mic, MicOff } from 'lucide-react';
 import api from '../lib/api';
 import { useToastStore } from '../store';
 import { Waveform, Spinner } from '../components/UI';
+import { AudioRecorder } from '../components/AudioRecorder';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DetectResult {
@@ -26,6 +27,15 @@ export default function DeepfakeDetector() {
   const analyzeFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    await submitAudio(file);
+  };
+
+  const handleRecordingComplete = async (audioBlob: Blob) => {
+    const file = new File([audioBlob], `detect-recording-${Date.now()}.webm`, { type: 'audio/webm' });
+    await submitAudio(file);
+  };
+
+  const submitAudio = async (file: File) => {
     setAnalyzing(true);
     setResult(null);
     try {
@@ -36,7 +46,7 @@ export default function DeepfakeDetector() {
       setResult(r.data);
       addToast('Analysis complete', 'success');
     } catch (err: any) {
-      addToast(err.message || 'Detection microservice error. Ensure Celery workers are running.', 'error');
+      addToast(err.response?.data?.detail || err.message || 'Detection microservice error. Ensure Celery workers are running.', 'error');
     } finally {
       setAnalyzing(false);
     }
@@ -84,12 +94,15 @@ export default function DeepfakeDetector() {
       {tab === 0 && (
         <div>
           {!analyzing && !result && (
-            <div className="dropzone" onClick={() => fileRef.current?.click()}>
-              <div className="dropzone-icon">🎵</div>
-              <p><strong>Drop audio file here</strong> or click to browse</p>
-              <p className="text-muted font-11 mt-8">MP3, WAV, FLAC, OGG · Any length</p>
-              <label htmlFor="detect-file" className="sr-only">Upload Audio File for Analysis</label>
-              <input ref={fileRef} type="file" accept="audio/*" className="hidden" id="detect-file" onChange={analyzeFile} />
+            <div className="grid-2 gap-4">
+              <AudioRecorder onRecordingComplete={handleRecordingComplete} maxDurationSeconds={60} />
+              <div className="dropzone h-full min-h-[200px]" onClick={() => fileRef.current?.click()}>
+                <div className="dropzone-icon">🎵</div>
+                <p><strong>Drop audio file here</strong> or click to browse</p>
+                <p className="text-muted font-11 mt-8">MP3, WAV, FLAC, OGG · Any length</p>
+                <label htmlFor="detect-file" className="sr-only">Upload Audio File for Analysis</label>
+                <input ref={fileRef} type="file" accept="audio/*" className="hidden" id="detect-file" onChange={analyzeFile} />
+              </div>
             </div>
           )}
 

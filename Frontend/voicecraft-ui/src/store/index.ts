@@ -44,3 +44,20 @@ export const useToastStore = create<ToastStore>((set) => ({
   },
   removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }));
+
+interface ThemeStore {
+  isDark: boolean;
+  toggleTheme: () => void;
+  setTheme: (isDark: boolean) => void;
+}
+
+export const useThemeStore = create<ThemeStore>()(
+  persist(
+    (set) => ({
+      isDark: false, // Light mode by default
+      toggleTheme: () => set((state) => ({ isDark: !state.isDark })),
+      setTheme: (isDark) => set({ isDark }),
+    }),
+    { name: 'vc-theme' }
+  )
+);

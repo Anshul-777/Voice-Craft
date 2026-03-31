@@ -84,7 +84,7 @@ class GenerationJob(Base):
     processing_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    job_metadata: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
 
     voice_profile: Mapped["VoiceProfile"] = relationship("VoiceProfile")  # type: ignore[name-defined]
 

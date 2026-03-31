@@ -3,7 +3,7 @@
 # Stage 1: builder (deps) | Stage 2: api | Stage 3: worker
 # ═══════════════════════════════════════════════════════════════
 
-FROM python:3.10-slim AS builder
+FROM python:3.11-slim AS builder
 
 # System deps for audio processing and ML
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -28,7 +28,7 @@ RUN pip install --upgrade pip "setuptools<70.0" wheel && \
 
 
 # ── API Stage ─────────────────────────────────────────────────
-FROM python:3.10-slim AS api
+FROM python:3.11-slim AS api
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
@@ -39,7 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY . .
 

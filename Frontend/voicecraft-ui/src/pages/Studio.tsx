@@ -3,6 +3,7 @@ import { Play, Download, Zap, UploadCloud } from 'lucide-react';
 import api from '../lib/api';
 import { useToastStore } from '../store';
 import { Waveform, Spinner } from '../components/UI';
+import { AudioRecorder } from '../components/AudioRecorder';
 
 const LANGUAGES = ['en','es','fr','de','it','pt','zh','ja','ko','ar','hi','ru','tr','nl','pl','sv','cs'];
 const EMOTIONS = [
@@ -110,6 +111,12 @@ export default function Studio() {
     }
   };
 
+  const handleS2SRecordingComplete = (audioBlob: Blob) => {
+    const file = new File([audioBlob], `s2s-live-${Date.now()}.webm`, { type: 'audio/webm' });
+    setSourceAudio(file);
+    addToast('Live audio captured. Ready for S2S synthesis.', 'success');
+  };
+
   const vName = voices.find(v => v.id === selectedVoice)?.name || '...';
 
   return (
@@ -181,22 +188,28 @@ export default function Studio() {
                </div>
             ) : (
                <div className="animate-fade-in">
-                  <div className="card bg-deep border-dashed border p-32 text-center mb-8">
-                     {sourceAudio ? (
-                        <div className="text-violet font-bold">
-                          <UploadCloud size={32} className="m-auto mb-8" />
-                          Source Loaded: {sourceAudio.name}
-                        </div>
-                     ) : (
-                        <div className="opacity-80 cursor-pointer" onClick={() => s2sFileRef.current?.click()}>
-                           <UploadCloud size={32} className="m-auto mb-8" />
-                           <p className="font-bold">Upload Source Audio</p>
-                           <p className="text-sm text-muted mt-2">The AI will extract your speech, transcribe it, and re-synthesize it in {vName}'s exact voice.</p>
-                        </div>
-                     )}
-                     <input ref={s2sFileRef} type="file" accept="audio/*" className="hidden" onChange={(e) => {
-                       if (e.target.files) setSourceAudio(e.target.files[0]);
-                     }} />
+                  <div className="grid-2 gap-4 mb-8">
+                     <AudioRecorder onRecordingComplete={handleS2SRecordingComplete} maxDurationSeconds={180} />
+                     <div className="card bg-deep border-dashed border p-32 text-center h-full flex flex-col items-center justify-center cursor-pointer hover:bg-violet-soft/20 transition-colors" onClick={() => s2sFileRef.current?.click()}>
+                        {sourceAudio ? (
+                           <div className="text-violet font-bold">
+                             <UploadCloud size={32} className="m-auto mb-8" />
+                             Source Loaded: <br/><span className="text-sm font-mono mt-2 inline-block">{sourceAudio.name}</span>
+                           </div>
+                        ) : (
+                           <div className="opacity-80">
+                              <UploadCloud size={32} className="m-auto mb-8" />
+                              <p className="font-bold">Upload Source Audio</p>
+                              <p className="text-sm text-muted mt-2">Extract speech, transcribe, and re-synthesize in <strong>{vName}'s</strong> exact voice.</p>
+                           </div>
+                        )}
+                        <input ref={s2sFileRef} type="file" accept="audio/*" className="hidden" onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setSourceAudio(e.target.files[0]);
+                            addToast('Audio file loaded.', 'success');
+                          }
+                        }} />
+                     </div>
                   </div>
 
                   {sourceAudio && (

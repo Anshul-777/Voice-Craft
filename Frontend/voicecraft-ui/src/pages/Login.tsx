@@ -17,22 +17,15 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await api.post('/api/auth/login', { email, password }).catch(() => ({ data: { access_token: 'demo_token' } }));
+      const res = await api.post('/api/auth/login', { email, password });
       const { access_token } = res.data;
       api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-      const me = await api.get('/api/auth/me').catch(() => ({ data: { id: '1', email, username: email.split('@')[0], plan: 'Free' } }));
+      const me = await api.get('/api/auth/me');
       setAuth(access_token, me.data);
-      addToast(access_token === 'demo_token' ? 'Demo Mode: Backend Offline' : 'Welcome back!', 'success');
+      addToast('Welcome back!', 'success');
       navigate('/dashboard');
     } catch (err: any) {
-      if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
-        const demoUsername = email.split('@')[0];
-        setAuth('demo_token', { id: '1', email, username: demoUsername, plan: 'Free' });
-        addToast('Demo Mode: Backend currently offline.', 'info');
-        navigate('/dashboard');
-      } else {
-        addToast(err.message || 'Login failed', 'error');
-      }
+      addToast(err.response?.data?.detail || err.message || 'Login failed', 'error');
     } finally {
       setLoading(false);
     }
