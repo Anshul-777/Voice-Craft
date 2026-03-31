@@ -3,6 +3,10 @@
 # All packages: free, open-source, available as of 2025
 # ═══════════════════════════════════════════════════════════════
 
+# Build tools — must be first
+setuptools<70.0
+wheel>=0.45
+
 # ── Web Framework ──────────────────────────────────────────────
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
@@ -44,7 +48,7 @@ pydub==0.25.1
 audioread==3.0.1
 resampy==0.4.3
 noisereduce==3.0.3
-webrtcvad==2.0.10
+webrtcvad-wheels==2.0.10.post2
 
 # ── Voice Cloning & TTS (Coqui XTTS-v2 — Apache 2.0, FREE) ──
 TTS==0.22.0
@@ -70,10 +74,10 @@ praat-parselmouth==0.4.4 # Glottal / prosodic analysis
 scikit-learn==1.5.2
 joblib==1.4.2
 onnxruntime==1.20.1     # Fast CPU inference for detection models
-pandas==2.2.3
+pandas<2.0.0,>=1.4.0
 
 # ── Transcription (Whisper — MIT License, FREE) ───────────────
-openai-whisper==20240930
+openai-whisper==20231117
 
 # ── Background Tasks / Concurrency ───────────────────────────
 anyio==4.7.0

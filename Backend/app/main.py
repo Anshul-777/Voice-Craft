@@ -190,11 +190,13 @@ async def global_exception_handler(request: Request, exc: Exception):
 from app.routers.auth import router as auth_router
 from app.routers.voice_clone import router as voice_router
 from app.routers.tts import router as tts_router
+from app.routers.s2s import router as s2s_router
 from app.routers.detection import router as detection_router
 
 app.include_router(auth_router)
 app.include_router(voice_router)
 app.include_router(tts_router)
+app.include_router(s2s_router)
 app.include_router(detection_router)
 
 

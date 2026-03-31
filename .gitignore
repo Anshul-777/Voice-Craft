@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+ENV/
+env/
+.env
+
+# Node
+node_modules/
+dist/
+build/
+.next/
+.cache/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+Backend/build.log
+Backend/app/models/
+Backend/outputs/
+Frontend/.env
+Frontend/node_modules/
+Frontend/dist/
+Frontend/build/
+Frontend/voicecraft-ui/node_modules/
+Frontend/voicecraft-ui/dist/
+Frontend/voicecraft-ui/build/
