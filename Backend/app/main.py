@@ -53,14 +53,15 @@ async def lifespan(app: FastAPI):
     # Ensure directories exist
     settings.ensure_dirs()
 
-    # Create database tables
+    # Create database tables (optional in dev mode)
     try:
         from app.models.database import create_tables
         await create_tables()
         logger.info("Database tables OK")
     except Exception as e:
-        logger.error("Database init failed", error=str(e))
-        raise
+        logger.warning("Database init failed (continuing in dev mode)", error=str(e))
+        if not settings.DEBUG:
+            raise
 
     # Initialize MinIO buckets
     try:
@@ -70,6 +71,9 @@ async def lifespan(app: FastAPI):
         logger.info("MinIO buckets OK")
     except Exception as e:
         logger.warning("MinIO init failed — storage may be unavailable", error=str(e))
+        if not settings.DEBUG:
+            logger.error("MinIO required in production")
+            raise
 
     # Pre-load detection models (optional — workers also load them)
     if os.getenv("PRELOAD_MODELS", "false").lower() == "true":

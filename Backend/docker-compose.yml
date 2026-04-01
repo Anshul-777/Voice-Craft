@@ -30,7 +30,6 @@ x-api-environment: &api-env
   METRICS_ENABLED: "true"
   JWT_SECRET: "CHANGE-THIS-SECRET-IN-PRODUCTION-MIN-32-CHARS"
   SECRET_KEY: "CHANGE-THIS-IN-PRODUCTION-TOO"
-  ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://localhost:5174","http://localhost:8000"]'
 
 
 x-gpu-deploy: &gpu-deploy

@@ -42,9 +42,21 @@ export default function DeepfakeDetector() {
       const fd = new FormData();
       fd.append('audio_file', file);
       fd.append('analysis_mode', 'full');
-      const r = await api.post('/api/detect/analyze', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setResult(r.data);
-      addToast('Analysis complete', 'success');
+      const r = await api.post('/api/detect/submit', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const resultId = r.data.id;
+      
+      for (let i = 0; i < 40; i++) {
+        await new Promise((res) => setTimeout(res, 1500));
+        const poll = await api.get(`/api/detect/results/${resultId}`);
+        if (poll.data.status === 'completed') {
+          setResult(poll.data);
+          addToast('Analysis complete', 'success');
+          break;
+        }
+        if (poll.data.status === 'failed') {
+          throw new Error('Analysis failed inside the detection worker.');
+        }
+      }
     } catch (err: any) {
       addToast(err.response?.data?.detail || err.message || 'Detection microservice error. Ensure Celery workers are running.', 'error');
     } finally {

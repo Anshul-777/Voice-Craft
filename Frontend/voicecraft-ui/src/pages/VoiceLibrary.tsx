@@ -19,7 +19,16 @@ export default function VoiceLibrary() {
   const [voices, setVoices] = useState<Voice[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', language: 'en' });
+  const [form, setForm] = useState({ 
+    mode: 'clone', 
+    name: '', 
+    description: '', 
+    language: 'en',
+    gender: 'male',
+    age: 'middle-aged',
+    accent: 'american',
+    tone: 'conversational' 
+  });
   const { addToast } = useToastStore();
   const navigate = useNavigate();
 
@@ -43,7 +52,16 @@ export default function VoiceLibrary() {
       const r = await api.post('/api/voices', form);
       setVoices((v) => [...v, r.data]);
       setShowModal(false);
-      setForm({ name: '', description: '', language: 'en' });
+      setForm({ 
+        mode: 'clone', 
+        name: '', 
+        description: '', 
+        language: 'en',
+        gender: 'male',
+        age: 'middle-aged',
+        accent: 'american',
+        tone: 'conversational' 
+      });
       addToast('Voice profile created!', 'success');
     } catch (err: any) {
       addToast(err.message || 'Failed to create voice', 'error');
@@ -138,27 +156,91 @@ export default function VoiceLibrary() {
       </div>
 
       {showModal && (
-        <Modal title="Create Voice Profile" onClose={() => setShowModal(false)}>
+        <Modal title="Create New Voice" onClose={() => setShowModal(false)}>
+          <div className="tabs mb-6">
+            <button className={`tab-btn${form.mode === 'clone' ? ' active' : ''}`} onClick={() => setForm(f => ({...f, mode: 'clone'}))}>
+              🎙️ Voice Clone
+            </button>
+            <button className={`tab-btn${form.mode === 'design' ? ' active' : ''}`} onClick={() => setForm(f => ({...f, mode: 'design'}))}>
+              ✨ Voice Design
+            </button>
+          </div>
+
           <div className="form-group">
             <label className="form-label" htmlFor="voice-name">Voice Name *</label>
-            <input id="voice-name" className="form-input" placeholder="e.g. My Professional Voice" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
+            <input id="voice-name" className="form-input" placeholder="e.g. My Custom Voice" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="voice-desc">Description</label>
-            <input id="voice-desc" className="form-input" placeholder="Optional notes..." value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="voice-lang">Language</label>
-            <select id="voice-lang" className="form-select" value={form.language} title="Select Language" onChange={(e) => setForm(f => ({ ...f, language: e.target.value }))}>
-              {['en','es','fr','de','it','pt','zh','ja','ko','ar','hi','ru','tr','nl','pl','sv','cs'].map(l => (
-                <option key={l} value={l}>{l.toUpperCase()}</option>
-              ))}
-            </select>
-          </div>
-          <div className="modal-actions">
+
+          {form.mode === 'clone' ? (
+            <>
+              <div className="form-group">
+                <label className="form-label" htmlFor="voice-desc">Description (Optional)</label>
+                <input id="voice-desc" className="form-input" placeholder="Optional notes about this speaker..." value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="voice-lang">Primary Language</label>
+                <select id="voice-lang" className="form-select" value={form.language} title="Select Language" onChange={(e) => setForm(f => ({ ...f, language: e.target.value }))}>
+                  {['en','es','fr','de','it','pt','zh','ja','ko','ar','hi','ru','tr','nl','pl','sv','cs'].map(l => (
+                    <option key={l} value={l}>{l.toUpperCase()}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-xs text-muted mb-4">You will upload or record the voice samples on the next screen.</p>
+            </>
+          ) : (
+            <div className="animate-fade-in">
+              <div className="form-group">
+                <label className="form-label" htmlFor="voice-prompt">Voice Description</label>
+                <textarea id="voice-prompt" className="form-textarea min-h-[80px]" placeholder="A middle-aged British man with a deep, authoritative newscaster tone..." value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
+              </div>
+
+              <div className="grid-2 mb-4">
+                <div className="form-group">
+                  <label className="form-label">Gender</label>
+                  <select className="form-select" title="Voice Gender" value={form.gender || 'male'} onChange={(e) => setForm(f => ({ ...f, gender: e.target.value }))}>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="non-binary">Non-binary</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Age Group</label>
+                  <select className="form-select" title="Voice Age Group" value={form.age || 'middle-aged'} onChange={(e) => setForm(f => ({ ...f, age: e.target.value }))}>
+                    <option value="young">Young (18-30)</option>
+                    <option value="middle-aged">Middle-aged (30-50)</option>
+                    <option value="elderly">Elderly (50+)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid-2 mb-4">
+                <div className="form-group">
+                  <label className="form-label">Accent</label>
+                  <select className="form-select" title="Voice Accent" value={form.accent || 'american'} onChange={(e) => setForm(f => ({ ...f, accent: e.target.value }))}>
+                    <option value="american">American</option>
+                    <option value="british">British</option>
+                    <option value="australian">Australian</option>
+                    <option value="european">European</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Tone & Style</label>
+                  <select className="form-select" title="Voice Tone" value={form.tone || 'conversational'} onChange={(e) => setForm(f => ({ ...f, tone: e.target.value }))}>
+                    <option value="conversational">Conversational</option>
+                    <option value="authoritative">Authoritative / News</option>
+                    <option value="narrative">Storytelling</option>
+                    <option value="energetic">Energetic / Promo</option>
+                  </select>
+                </div>
+              </div>
+              <p className="text-xs text-amber mb-0 font-bold">✨ Synthesizing voice persona using VoiceCraft Designer...</p>
+            </div>
+          )}
+
+          <div className="modal-actions mt-6">
             <button className="btn btn-secondary" onClick={() => setShowModal(false)} title="Cancel">Cancel</button>
             <button id="create-voice-btn" className="btn btn-primary" onClick={createVoice} disabled={loading} title="Create Voice">
-              {loading ? <Spinner /> : 'Create Profile'}
+              {loading ? <Spinner /> : form.mode === 'design' ? 'Generate Voice' : 'Next Step'}
             </button>
           </div>
         </Modal>
